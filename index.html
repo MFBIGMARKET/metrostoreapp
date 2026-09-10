@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Store Admin Dashboard</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#488928">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <style>
+        :root { --brand-green: #488928; --brand-yellow: #f2ba1d; --bg-light: #f4f7f6; --surface: #ffffff; --text-dark: #121212; --text-muted: #828a82; --border: #e8ece8; --nav-active-bg: #eaf3e6; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
+        body { background-color: var(--bg-light); color: var(--text-dark); min-height: 100vh; overflow-x: hidden; }
+        
+        #loginScreen { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; background: var(--bg-light); }
+        .login-card { background: var(--surface); padding: 40px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); width: 100%; max-width: 400px; }
+        .auth-logo-wrap { display: flex; justify-content: center; margin-bottom: 30px;}
+        .auth-logo-wrap img { max-height: 50px; }
+        h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; text-align: center;}
+        .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 30px; text-align: center;}
+        
+        .input-group { margin-bottom: 20px; position: relative; }
+        .input-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        .input-group input { width: 100%; padding: 15px; border: 1.5px solid var(--border); border-radius: 12px; font-size: 15px; outline: none; transition: 0.2s; background: #fafafa;}
+        .input-group input:focus { border-color: var(--brand-green); background: var(--surface); box-shadow: 0 0 0 4px rgba(72,137,40,0.1);}
+        .input-group input.with-icon { padding-left: 45px; }
+        .input-icon { position: absolute; left: 15px; top: 38px; width: 20px; height: 20px; color: #a0a5aa; }
+        input[type="file"] { padding: 10px; }
+        input[type="file"]::file-selector-button { background: var(--nav-active-bg); color: var(--brand-green); border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; margin-right: 15px; cursor: pointer; transition: 0.2s; }
+        
+        .btn { width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; display: flex; justify-content: center; align-items: center; }
+        .btn-primary { background: var(--brand-green); color: white; }
+        .btn-primary:active { transform: scale(0.98); }
+        
+        #mainApp { display: none; height: 100vh; flex-direction: column; width: 100%; overflow: hidden;}
+        .app-header { background: var(--surface); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); z-index: 20; flex-shrink: 0;}
+        .app-logo { max-height: 35px; max-width: 180px; object-fit: contain; } /* Static Logo */
+        .header-title { font-size: 13px; font-weight: 800; color: var(--brand-green); background: var(--nav-active-bg); padding: 6px 12px; border-radius: 12px;}
+        
+        .dashboard-body { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
+        .app-nav { background: var(--surface); display: flex; justify-content: space-around; align-items: center; padding: 10px; border-top: 1px solid var(--border); z-index: 10; flex-shrink: 0;}
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); font-size: 11px; font-weight: 600; cursor: pointer; padding: 8px 12px; border-radius: 12px; transition: 0.2s; flex: 1;}
+        .nav-item svg { width: 22px; height: 22px; stroke-width: 2.5; transition: 0.2s;}
+        .nav-item.active { background: var(--nav-active-bg); color: var(--brand-green); }
+        
+        .content-area { flex-grow: 1; position: relative; overflow: hidden; background: var(--bg-light); display: flex; flex-direction: column;}
+        .screen { display: none; flex-direction: column; height: 100%; overflow-y: auto; }
+        .screen.active { display: flex; }
+        .section-header { padding: 25px; background: var(--bg-light); position: sticky; top: 0; z-index: 5;}
+        .s-title { font-size: 24px; font-weight: 800; color: var(--text-dark); margin-bottom: 4px;}
+        .s-sub { font-size: 13px; color: var(--text-muted); }
+        .content-padding { padding: 0 25px 25px 25px; }
+        
+        .grid-list { display: grid; grid-template-columns: 1fr; gap: 15px; align-items: start;}
+        .arrival-card, .history-card, .dir-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02);}
+        
+        .arr-info { display: flex; flex-direction: column; gap: 6px; }
+        .arr-name { font-size: 18px; font-weight: 700; color: var(--text-dark); }
+        .arr-time { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;}
+        .arr-action { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+        
+        .btn-mark { padding: 12px 20px; background: var(--brand-green); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-mark:active { transform: scale(0.95); }
+        .badge-arrived { font-size: 12px; font-weight: 800; padding: 8px 14px; border-radius: 12px; background: var(--nav-active-bg); color: var(--brand-green); text-transform: uppercase;}
+        
+        .dir-card { flex-direction: column; align-items: flex-start; gap: 10px; }
+        .dir-header { display: flex; justify-content: space-between; width: 100%; border-bottom: 1px solid var(--border); padding-bottom: 10px;}
+        .dir-details { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 10px; font-size: 13px; color: var(--text-muted);}
+        .dir-details span { color: var(--text-dark); font-weight: 600; display: block;}
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 15px; grid-column: 1 / -1;}
+        .empty-state svg { color: #d0d5d0; width: 64px; height: 64px;}
+        
+        .settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.03); max-width: 600px;}
+        .btn-logout { width: 100%; padding: 16px; background: #fff0f0; color: #dc3545; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px;}
+
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e231e; color: white; padding: 14px 28px; border-radius: 30px; display: none; z-index: 9999; font-size: 14px; font-weight: 600;}
+
+        @media (min-width: 768px) {
+            .dashboard-body { flex-direction: row; }
+            .app-nav { flex-direction: column; justify-content: flex-start; width: 250px; padding: 25px 15px; border-top: none; border-right: 1px solid var(--border); background: var(--surface); }
+            .nav-item { flex-direction: row; font-size: 14px; padding: 14px 20px; width: 100%; gap: 15px; margin-bottom: 8px;}
+            .content-area { border-top-left-radius: 20px; }
+            .section-header { padding: 40px 40px 20px 40px; background: transparent; }
+            .content-padding { padding: 0 40px 40px 40px; }
+            .grid-list { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen">
+        <div class="login-card">
+            <div class="auth-logo-wrap"><img class="app-logo" src="logo.png" alt="App Logo"></div>
+            <h1>Store Admin</h1>
+            <p class="subtitle">Log in to manage store operations.</p>
+            <div class="input-group">
+                <label>Email Address</label>
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                <input type="email" id="email" class="with-icon" placeholder="admin@store.com">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                <input type="password" id="password" class="with-icon" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" id="loginBtn" onclick="login()">Log In</button>
+        </div>
+    </div>
+
+    <div id="mainApp">
+        <div class="app-header">
+            <img class="app-logo" src="logo.png" alt="App Logo">
+            <div class="header-title">DASHBOARD</div>
+        </div>
+
+        <div class="dashboard-body">
+            <div class="app-nav">
+                <div class="nav-item active" onclick="switchNav('arrivals')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> Arrivals</div>
+                <div class="nav-item" onclick="switchNav('history')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> History</div>
+                <div class="nav-item" onclick="switchNav('directory')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Directory</div>
+                <div class="nav-item" onclick="switchNav('offers')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Flyers</div>
+                <div class="nav-item" onclick="switchNav('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Settings</div>
+            </div>
+
+            <div class="content-area">
+                
+                <div id="arrivalsTab" class="screen active">
+                    <div class="section-header"><h2 class="s-title">Active Queue</h2><p class="s-sub">Customers waiting in store.</p></div>
+                    <div class="content-padding grid-list" id="arrivalsList"></div>
+                </div>
+
+                <div id="historyTab" class="screen">
+                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;">
+                        <div><h2 class="s-title">History</h2><p class="s-sub">Checked out customers.</p></div>
+                        <input type="date" id="historyDate" onchange="loadHistory()" style="background: var(--surface); padding:10px; border:1px solid var(--border); border-radius:8px; outline:none;">
+                    </div>
+                    <div class="content-padding grid-list" id="historyList"></div>
+                </div>
+
+                <div id="directoryTab" class="screen">
+                    <div class="section-header"><h2 class="s-title">Priority Directory</h2><p class="s-sub">Database of approved priority customers.</p></div>
+                    <div class="content-padding grid-list" id="directoryList"><p style="text-align:center; color:gray;">Loading...</p></div>
+                </div>
+
+                <div id="offersTab" class="screen">
+                    <div class="section-header"><h2 class="s-title">Add Flyer</h2><p class="s-sub">Upload new weekly offers to the app.</p></div>
+                    <div class="content-padding">
+                        <div class="settings-card">
+                            <div class="input-group"><label>Flyer Image</label><input type="file" id="flyerImage" accept="image/*"></div>
+                            <div style="display:flex; gap:15px;">
+                                <div class="input-group" style="flex:1;"><label>Valid From</label><input type="date" id="validFrom"></div>
+                                <div class="input-group" style="flex:1;"><label>Valid To</label><input type="date" id="validTo"></div>
+                            </div>
+                            <div class="input-group"><label>Show on App Until</label><input type="date" id="showUntil"></div>
+                            <button class="btn btn-primary" id="uploadBtn" onclick="uploadOffer()">Publish Flyer</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SETTINGS TAB (Logo upload removed) -->
+                <div id="settingsTab" class="screen">
+                    <div class="section-header"><h2 class="s-title">Store Settings</h2><p class="s-sub">Manage admin sessions and data.</p></div>
+                    <div class="content-padding">
+                        <div class="settings-card">
+                            
+                            <h3 style="font-size: 18px; margin-bottom: 20px; color: var(--text-dark);">Upload Priority CSV</h3>
+                            <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Upload a CSV file with columns exactly matching: <br><code>Name, Card Number, Location, Phone Number</code></p>
+                            <div class="input-group"><input type="file" id="csvFile" accept=".csv"></div>
+                            <button class="btn btn-primary" id="uploadCsvBtn" onclick="uploadCSV()">Import Customers</button>
+
+                            <hr style="border:none; border-top: 1px solid var(--border); margin: 35px 0;">
+                            
+                            <h3 style="font-size: 18px; margin-bottom: 20px; color: var(--text-dark);">Admin Account</h3>
+                            <button class="btn-logout" onclick="logout()">Sign Out of Admin</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Message</div>
+
+    <script>
+        const SUPABASE_URL = 'https://ftbrxpgztkncrsnptbie.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0YnJ4cGd6dGtuY3JzbnB0YmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNzcxNDUsImV4cCI6MjEwMzY1MzE0NX0.wmfKOLoURG9gRyNJ-Fencm7Z_GXZAX8yy1ZSvsJVoEY';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        document.getElementById('historyDate').value = new Date().toLocaleDateString('en-CA');
+
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3500); }
+
+        async function checkSession() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainApp').style.display = 'flex'; loadArrivals(); loadHistory(); loadDirectory(); listenForArrivals(); } 
+            else { document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('mainApp').style.display = 'none'; }
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value; const password = document.getElementById('password').value; const btn = document.getElementById('loginBtn');
+            btn.innerText = "Logging in..."; const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); btn.innerText = "Log In";
+            if (error) showToast("Login failed. Check credentials."); else checkSession();
+        }
+        async function logout() { await supabaseClient.auth.signOut(); checkSession(); }
+
+        async function loadArrivals() {
+            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+            const { data, error } = await supabaseClient.from('visits').select('*').eq('status', 'arriving').gte('created_at', oneHourAgo).order('created_at', { ascending: false });
+            const list = document.getElementById('arrivalsList'); list.innerHTML = '';
+            
+            if(!data || data.length === 0) { list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg><p>No active customers waiting.</p></div>`; return; }
+            data.forEach(v => {
+                const time = new Date(v.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                list.innerHTML += `<div class="arrival-card"><div class="arr-info"><div class="arr-name">${v.customer_name || 'Customer'}</div><div class="arr-time"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Checked In: ${time}</div></div><div class="arr-action"><button class="btn-mark" onclick="markArrived('${v.id}', this)">Check Out</button></div></div>`;
+            });
+        }
+
+        async function markArrived(id, btn) { 
+            btn.innerText = "Processing..."; btn.disabled = true;
+            await supabaseClient.from('visits').update({ status: 'completed' }).eq('id', id); 
+            showToast("Customer Checked Out!"); loadArrivals(); loadHistory();
+        }
+
+        async function loadHistory() {
+            const dateVal = document.getElementById('historyDate').value; if(!dateVal) return;
+            const start = new Date(dateVal); start.setHours(0,0,0,0); const end = new Date(dateVal); end.setHours(23,59,59,999);
+            const { data } = await supabaseClient.from('visits').select('*').eq('status', 'completed').gte('created_at', start.toISOString()).lte('created_at', end.toISOString()).order('created_at', { ascending: false });
+            const list = document.getElementById('historyList'); list.innerHTML = '';
+            if(!data || data.length === 0) { list.innerHTML = `<div class="empty-state"><p>No completed check-outs on this date.</p></div>`; return; }
+            data.forEach(v => {
+                const time = new Date(v.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                list.innerHTML += `<div class="history-card"><div class="arr-info"><div class="arr-name">${v.customer_name || 'Customer'}</div><div class="arr-time">Handled at: ${time}</div></div><div class="arr-action"><div class="badge-arrived">✓ COMPLETED</div></div></div>`;
+            });
+        }
+
+        async function loadDirectory() {
+            const { data } = await supabaseClient.from('priority_customers').select('*').order('name', { ascending: true });
+            const list = document.getElementById('directoryList'); list.innerHTML = '';
+            if(!data || data.length === 0) { list.innerHTML = `<div class="empty-state"><p>No priority customers found. Please upload a CSV.</p></div>`; return; }
+            data.forEach(c => {
+                list.innerHTML += `<div class="dir-card"><div class="dir-header"><div class="arr-name">${c.name}</div><div class="arr-time">📱 ${c.phone_number}</div></div><div class="dir-details"><div>Card Number <span>${c.card_number}</span></div><div>Location <span>${c.location || 'N/A'}</span></div></div></div>`;
+            });
+        }
+
+        async function uploadCSV() {
+            const fileInput = document.getElementById('csvFile'); const btn = document.getElementById('uploadCsvBtn');
+            if (!fileInput.files[0]) return showToast("Select a CSV file first.");
+            btn.innerText = "Parsing...";
+            Papa.parse(fileInput.files[0], { header: true, skipEmptyLines: true, complete: async function(results) {
+                btn.innerText = "Uploading to Database...";
+                const records = results.data.map(row => ({ name: row['Name'], card_number: row['Card Number'], location: row['Location'], phone_number: row['Phone Number'] })).filter(r => r.phone_number);
+                if (records.length === 0) { btn.innerText = "Import Customers"; return showToast("CSV Format Error: Columns must match exactly."); }
+                const { error } = await supabaseClient.from('priority_customers').upsert(records);
+                btn.innerText = "Import Customers";
+                if (error) { showToast("Upload Error: " + error.message); } else { showToast(`Successfully imported ${records.length} customers!`); fileInput.value = ''; loadDirectory(); }
+            }});
+        }
+
+        function listenForArrivals() { supabaseClient.channel('visits-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'visits' }, payload => { loadArrivals(); loadHistory(); }).subscribe(); }
+
+        async function uploadOffer() {
+            const fileInput = document.getElementById('flyerImage'); const validFrom = document.getElementById('validFrom').value; const validTo = document.getElementById('validTo').value; const showUntil = document.getElementById('showUntil').value; const btn = document.getElementById('uploadBtn');
+            if (!fileInput.files[0] || !validFrom || !validTo || !showUntil) return showToast("Fill all fields."); btn.innerText = "Uploading...";
+            try { const file = fileInput.files[0]; const fileName = `flyer_${Date.now()}.${file.name.split('.').pop()}`; await supabaseClient.storage.from('flyers').upload(fileName, file); const { data } = supabaseClient.storage.from('flyers').getPublicUrl(fileName); await supabaseClient.from('offers').insert([{ image_url: data.publicUrl, valid_from: validFrom, valid_to: validTo, show_until: showUntil }]); showToast("Offer Published Successfully!"); fileInput.value = ''; document.getElementById('validFrom').value = ''; document.getElementById('validTo').value = ''; document.getElementById('showUntil').value = ''; } catch (err) { showToast("Error: " + err.message); } finally { btn.innerText = "Publish Flyer"; }
+        }
+
+        function switchNav(tabName) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(tabName + 'Tab').classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); if(event) event.currentTarget.classList.add('active'); }
+
+        checkSession();
+        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); }); }
+    </script>
+</body>
+</html>
