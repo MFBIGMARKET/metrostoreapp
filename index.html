@@ -24,9 +24,10 @@
         
         .input-group { margin-bottom: 20px; position: relative; }
         .input-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
-        .input-group input { width: 100%; padding: 15px; border: 1.5px solid var(--border); border-radius: 12px; font-size: 15px; outline: none; transition: 0.2s; background: #fafafa;}
-        .input-group input:focus { border-color: var(--brand-green); background: var(--surface); box-shadow: 0 0 0 4px rgba(72,137,40,0.1);}
+        .input-group input, .input-group select { width: 100%; padding: 15px; border: 1.5px solid var(--border); border-radius: 12px; font-size: 15px; outline: none; transition: 0.2s; background: #fafafa; color: var(--text-dark);}
+        .input-group input:focus, .input-group select:focus { border-color: var(--brand-green); background: var(--surface); box-shadow: 0 0 0 4px rgba(72,137,40,0.1);}
         .input-group input.with-icon { padding-left: 45px; }
+        .input-group input:disabled, .input-group select:disabled { opacity: 0.6; cursor: not-allowed; }
         .input-icon { position: absolute; left: 15px; top: 38px; width: 20px; height: 20px; color: #a0a5aa; }
         input[type="file"] { padding: 10px; }
         input[type="file"]::file-selector-button { background: var(--nav-active-bg); color: var(--brand-green); border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; margin-right: 15px; cursor: pointer; transition: 0.2s; }
@@ -34,17 +35,19 @@
         .btn { width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; display: flex; justify-content: center; align-items: center; }
         .btn-primary { background: var(--brand-green); color: white; }
         .btn-primary:active { transform: scale(0.98); }
+        .btn-danger { background: #fff0f0; color: #dc3545; }
         
         #mainApp { display: none; height: 100vh; flex-direction: column; width: 100%; overflow: hidden;}
         .app-header { background: var(--surface); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); z-index: 20; flex-shrink: 0;}
-        .app-logo { max-height: 35px; max-width: 180px; object-fit: contain; } /* Static Logo */
-        .header-title { font-size: 13px; font-weight: 800; color: var(--brand-green); background: var(--nav-active-bg); padding: 6px 12px; border-radius: 12px;}
+        .app-logo { max-height: 35px; max-width: 180px; object-fit: contain; } 
+        .header-title { font-size: 13px; font-weight: 800; color: var(--brand-green); background: var(--nav-active-bg); padding: 6px 12px; border-radius: 12px; letter-spacing: 0.5px;}
         
         .dashboard-body { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
         .app-nav { background: var(--surface); display: flex; justify-content: space-around; align-items: center; padding: 10px; border-top: 1px solid var(--border); z-index: 10; flex-shrink: 0;}
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); font-size: 11px; font-weight: 600; cursor: pointer; padding: 8px 12px; border-radius: 12px; transition: 0.2s; flex: 1;}
         .nav-item svg { width: 22px; height: 22px; stroke-width: 2.5; transition: 0.2s;}
         .nav-item.active { background: var(--nav-active-bg); color: var(--brand-green); }
+        .nav-item:hover:not(.active) { background: #f8f9f8; color: var(--text-dark); }
         
         .content-area { flex-grow: 1; position: relative; overflow: hidden; background: var(--bg-light); display: flex; flex-direction: column;}
         .screen { display: none; flex-direction: column; height: 100%; overflow-y: auto; }
@@ -55,29 +58,44 @@
         .content-padding { padding: 0 25px 25px 25px; }
         
         .grid-list { display: grid; grid-template-columns: 1fr; gap: 15px; align-items: start;}
-        .arrival-card, .history-card, .dir-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02);}
+        .arrival-card, .history-card, .dir-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02); transition: 0.2s;}
         
         .arr-info { display: flex; flex-direction: column; gap: 6px; }
         .arr-name { font-size: 18px; font-weight: 700; color: var(--text-dark); }
         .arr-time { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;}
         .arr-action { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
         
-        .btn-mark { padding: 12px 20px; background: var(--brand-green); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-mark { padding: 12px 20px; background: var(--brand-green); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(72,137,40,0.2);}
         .btn-mark:active { transform: scale(0.95); }
         .badge-arrived { font-size: 12px; font-weight: 800; padding: 8px 14px; border-radius: 12px; background: var(--nav-active-bg); color: var(--brand-green); text-transform: uppercase;}
         
-        .dir-card { flex-direction: column; align-items: flex-start; gap: 10px; }
+        .dir-card { flex-direction: column; align-items: flex-start; gap: 10px; cursor: pointer;}
+        .dir-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.05); border-color: #d8dfd8;}
         .dir-header { display: flex; justify-content: space-between; width: 100%; border-bottom: 1px solid var(--border); padding-bottom: 10px;}
         .dir-details { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 10px; font-size: 13px; color: var(--text-muted);}
         .dir-details span { color: var(--text-dark); font-weight: 600; display: block;}
+        .btn-icon { color: var(--text-muted); }
 
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 15px; grid-column: 1 / -1;}
         .empty-state svg { color: #d0d5d0; width: 64px; height: 64px;}
+        .empty-state p { font-size: 15px; font-weight: 500; }
         
         .settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.03); max-width: 600px;}
-        .btn-logout { width: 100%; padding: 16px; background: #fff0f0; color: #dc3545; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px;}
+        .btn-logout { width: 100%; padding: 16px; background: #fff0f0; color: #dc3545; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; transition: 0.2s;}
+        .btn-logout:hover { background: #ffebeb; }
 
-        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e231e; color: white; padding: 14px 28px; border-radius: 30px; display: none; z-index: 9999; font-size: 14px; font-weight: 600;}
+        /* --- MODAL STYLES --- */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(2px);}
+        .modal-content { background: var(--surface); border-radius: 24px; padding: 30px; width: 100%; max-width: 450px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); animation: popUp 0.2s ease-out; max-height: 90vh; overflow-y: auto;}
+        @keyframes popUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { font-size: 20px; font-weight: 800; color: var(--text-dark); }
+        .close-btn { cursor: pointer; color: var(--text-muted); background: var(--bg-light); border-radius: 50%; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; transition: 0.2s;}
+        .close-btn:hover { background: #fee; color: #dc3545;}
+        
+        .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
+
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e231e; color: white; padding: 14px 28px; border-radius: 30px; display: none; z-index: 9999; font-size: 14px; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.2);}
 
         @media (min-width: 768px) {
             .dashboard-body { flex-direction: row; }
@@ -86,6 +104,8 @@
             .content-area { border-top-left-radius: 20px; }
             .section-header { padding: 40px 40px 20px 40px; background: transparent; }
             .content-padding { padding: 0 40px 40px 40px; }
+            .form-row { display: flex; gap: 20px; }
+            .form-row > .input-group { flex: 1; }
             .grid-list { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
         }
     </style>
@@ -136,50 +156,112 @@
                 <div id="historyTab" class="screen">
                     <div class="section-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;">
                         <div><h2 class="s-title">History</h2><p class="s-sub">Checked out customers.</p></div>
-                        <input type="date" id="historyDate" onchange="loadHistory()" style="background: var(--surface); padding:10px; border:1px solid var(--border); border-radius:8px; outline:none;">
+                        <div class="input-group" style="margin-bottom: 0; min-width: 200px;"><input type="date" id="historyDate" onchange="loadHistory()" style="background: var(--surface); padding:10px;"></div>
                     </div>
                     <div class="content-padding grid-list" id="historyList"></div>
                 </div>
 
+                <!-- DIRECTORY TAB -->
                 <div id="directoryTab" class="screen">
-                    <div class="section-header"><h2 class="s-title">Priority Directory</h2><p class="s-sub">Database of approved priority customers.</p></div>
-                    <div class="content-padding grid-list" id="directoryList"><p style="text-align:center; color:gray;">Loading...</p></div>
+                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;">
+                        <div><h2 class="s-title">Priority Directory</h2><p class="s-sub">Manage approved priority customers.</p></div>
+                        <button class="btn btn-primary" style="width: auto; padding: 10px 16px; margin: 0; font-size: 14px;" onclick="openCustomerModal()">+ Add Customer</button>
+                    </div>
+                    <div class="content-padding grid-list" id="directoryList"></div>
                 </div>
 
                 <div id="offersTab" class="screen">
                     <div class="section-header"><h2 class="s-title">Add Flyer</h2><p class="s-sub">Upload new weekly offers to the app.</p></div>
                     <div class="content-padding">
                         <div class="settings-card">
-                            <div class="input-group"><label>Flyer Image</label><input type="file" id="flyerImage" accept="image/*"></div>
-                            <div style="display:flex; gap:15px;">
+                            <div class="input-group"><label>Flyer Image (JPG/PNG)</label><input type="file" id="flyerImage" accept="image/*"></div>
+                            <div class="form-row" style="display: flex; gap: 15px;">
                                 <div class="input-group" style="flex:1;"><label>Valid From</label><input type="date" id="validFrom"></div>
                                 <div class="input-group" style="flex:1;"><label>Valid To</label><input type="date" id="validTo"></div>
                             </div>
                             <div class="input-group"><label>Show on App Until</label><input type="date" id="showUntil"></div>
-                            <button class="btn btn-primary" id="uploadBtn" onclick="uploadOffer()">Publish Flyer</button>
+                            <button class="btn btn-primary" id="uploadBtn" onclick="uploadOffer()" style="margin-top: 10px;">Publish Flyer</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- SETTINGS TAB (Logo upload removed) -->
                 <div id="settingsTab" class="screen">
-                    <div class="section-header"><h2 class="s-title">Store Settings</h2><p class="s-sub">Manage admin sessions and data.</p></div>
+                    <div class="section-header"><h2 class="s-title">Store Settings</h2><p class="s-sub">Manage admin sessions and mass data.</p></div>
                     <div class="content-padding">
                         <div class="settings-card">
                             
-                            <h3 style="font-size: 18px; margin-bottom: 20px; color: var(--text-dark);">Upload Priority CSV</h3>
+                            <h3 style="font-size: 18px; margin-bottom: 20px; color: var(--text-dark);">Bulk Upload Priority List</h3>
                             <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Upload a CSV file with columns exactly matching: <br><code>Name, Card Number, Location, Phone Number</code></p>
                             <div class="input-group"><input type="file" id="csvFile" accept=".csv"></div>
-                            <button class="btn btn-primary" id="uploadCsvBtn" onclick="uploadCSV()">Import Customers</button>
+                            <button class="btn btn-primary" id="uploadCsvBtn" onclick="uploadCSV()">Import CSV</button>
 
-                            <hr style="border:none; border-top: 1px solid var(--border); margin: 35px 0;">
+                            <hr style="border:none; border-top: 1px solid var(--border); margin: 35px 0 25px 0;">
                             
                             <h3 style="font-size: 18px; margin-bottom: 20px; color: var(--text-dark);">Admin Account</h3>
-                            <button class="btn-logout" onclick="logout()">Sign Out of Admin</button>
+                            <button class="btn-logout" onclick="logout()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+                                Sign Out of Admin
+                            </button>
                         </div>
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOMER FORM MODAL (Expanded to include App Profile Data) -->
+    <div class="modal-overlay" id="customerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Customer Profile</h3>
+                <div class="close-btn" onclick="closeCustomerModal()">✕</div>
+            </div>
+            
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="custName" placeholder="e.g. John Doe">
+            </div>
+            <div class="input-group">
+                <label>Mobile Number (Primary ID)</label>
+                <input type="tel" id="custPhone" placeholder="e.g. 9876543210">
+            </div>
+            
+            <div style="display:flex; gap:15px;">
+                <div class="input-group" style="flex:1;">
+                    <label>Card Number</label>
+                    <input type="text" id="custCard" placeholder="mgc1234">
+                </div>
+                <div class="input-group" style="flex:1;">
+                    <label>Location</label>
+                    <input type="text" id="custLoc" placeholder="City">
+                </div>
+            </div>
+
+            <!-- Enhanced Profile Fields (Only editable if user registered in app) -->
+            <p id="unregisteredWarning" style="font-size: 12px; color: #f2ba1d; margin-bottom: 15px; font-weight: 600; display: none;">
+                ⚠️ Gender & Birthday can only be added by the customer after they register via the App.
+            </p>
+
+            <div style="display:flex; gap:15px;">
+                <div class="input-group" style="flex:1;">
+                    <label>Gender</label>
+                    <select id="custGender">
+                        <option value="">Select</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="input-group" style="flex:1;">
+                    <label>Birthday</label>
+                    <input type="date" id="custBirthday">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="saveCustBtn" style="flex: 2;" onclick="saveCustomer()">Save Profile</button>
+                <button class="btn btn-danger" id="delCustBtn" style="flex: 1; display: none;" onclick="deleteCustomer()">Delete</button>
             </div>
         </div>
     </div>
@@ -190,6 +272,10 @@
         const SUPABASE_URL = 'https://ftbrxpgztkncrsnptbie.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0YnJ4cGd6dGtuY3JzbnB0YmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNzcxNDUsImV4cCI6MjEwMzY1MzE0NX0.wmfKOLoURG9gRyNJ-Fencm7Z_GXZAX8yy1ZSvsJVoEY';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let directoryCache = {}; // Global cache to hold merged customer data
+        let currentEditPhone = null; 
+        let currentEditProfileId = null;
 
         document.getElementById('historyDate').value = new Date().toLocaleDateString('en-CA');
 
@@ -208,6 +294,7 @@
         }
         async function logout() { await supabaseClient.auth.signOut(); checkSession(); }
 
+        // --- ARRIVALS & HISTORY ---
         async function loadArrivals() {
             const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
             const { data, error } = await supabaseClient.from('visits').select('*').eq('status', 'arriving').gte('created_at', oneHourAgo).order('created_at', { ascending: false });
@@ -238,15 +325,181 @@
             });
         }
 
+        // --- DIRECTORY (INDIVIDUAL ADD/EDIT/DELETE) ---
         async function loadDirectory() {
-            const { data } = await supabaseClient.from('priority_customers').select('*').order('name', { ascending: true });
+            const { data: whitelist } = await supabaseClient.from('priority_customers').select('*').order('name', { ascending: true });
+            const { data: registeredProfiles } = await supabaseClient.from('profiles').select('*').eq('role', 'customer');
+            
             const list = document.getElementById('directoryList'); list.innerHTML = '';
-            if(!data || data.length === 0) { list.innerHTML = `<div class="empty-state"><p>No priority customers found. Please upload a CSV.</p></div>`; return; }
-            data.forEach(c => {
-                list.innerHTML += `<div class="dir-card"><div class="dir-header"><div class="arr-name">${c.name}</div><div class="arr-time">📱 ${c.phone_number}</div></div><div class="dir-details"><div>Card Number <span>${c.card_number}</span></div><div>Location <span>${c.location || 'N/A'}</span></div></div></div>`;
+            directoryCache = {}; // Reset cache
+
+            if(!whitelist || whitelist.length === 0) { list.innerHTML = `<div class="empty-state"><p>No priority customers found. Click Add Customer or upload a CSV.</p></div>`; return; }
+            
+            whitelist.forEach(c => {
+                const profile = registeredProfiles?.find(p => p.mobile_no === c.phone_number);
+                
+                // Merge Data (Profile overrides CSV if they've updated it via app)
+                const merged = {
+                    phone: c.phone_number,
+                    name: profile?.full_name || c.name,
+                    card: profile?.card_no || c.card_number,
+                    loc: profile?.location || c.location || '',
+                    gender: profile?.gender || '',
+                    bday: profile?.birthday || '',
+                    profileId: profile?.id || null
+                };
+
+                // Store in dictionary for instant modal access
+                directoryCache[c.phone_number] = merged;
+
+                const displayLoc = merged.loc || 'N/A';
+                const displayGender = merged.gender ? `<div>Gender <span>${merged.gender}</span></div>` : '';
+                const displayBday = merged.bday ? `<div>Birthday <span>${new Date(merged.bday).toLocaleDateString('en-GB')}</span></div>` : '';
+                const registeredBadge = merged.profileId ? `<span style="background:var(--nav-active-bg); color:var(--brand-green); padding:2px 6px; border-radius:4px; font-size:10px; margin-left:6px; vertical-align:middle;">App User</span>` : '';
+
+                list.innerHTML += `
+                    <div class="dir-card" onclick="openCustomerModal('${c.phone_number}')">
+                        <div class="dir-header">
+                            <div><div class="arr-name">${merged.name} ${registeredBadge}</div><div class="arr-time">📱 ${merged.phone}</div></div>
+                            <div class="btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></div>
+                        </div>
+                        <div class="dir-details">
+                            <div>Card Number <span>${merged.card}</span></div>
+                            <div>Location <span>${displayLoc}</span></div>
+                            ${displayGender}
+                            ${displayBday}
+                        </div>
+                    </div>`;
             });
         }
 
+        function openCustomerModal(phone = null) {
+            currentEditPhone = phone;
+
+            if (phone && directoryCache[phone]) {
+                // Edit Existing
+                const data = directoryCache[phone];
+                currentEditProfileId = data.profileId; // Crucial to know if we update `profiles` table
+
+                document.getElementById('custPhone').value = data.phone;
+                document.getElementById('custName').value = data.name;
+                document.getElementById('custCard').value = data.card;
+                document.getElementById('custLoc').value = data.loc;
+                document.getElementById('custGender').value = data.gender;
+                document.getElementById('custBirthday').value = data.bday;
+                
+                document.getElementById('custPhone').disabled = true; // Can't change primary key
+                document.getElementById('modalTitle').innerText = 'Edit Customer Profile';
+                document.getElementById('delCustBtn').style.display = 'block';
+
+                // Lock advanced fields if they haven't registered an account yet
+                const isReg = !!data.profileId;
+                document.getElementById('custGender').disabled = !isReg;
+                document.getElementById('custBirthday').disabled = !isReg;
+                document.getElementById('unregisteredWarning').style.display = isReg ? 'none' : 'block';
+
+            } else {
+                // Add New
+                currentEditProfileId = null;
+                document.getElementById('custPhone').value = '';
+                document.getElementById('custName').value = '';
+                document.getElementById('custCard').value = '';
+                document.getElementById('custLoc').value = '';
+                document.getElementById('custGender').value = '';
+                document.getElementById('custBirthday').value = '';
+                
+                document.getElementById('custPhone').disabled = false;
+                document.getElementById('custGender').disabled = true;
+                document.getElementById('custBirthday').disabled = true;
+                
+                document.getElementById('modalTitle').innerText = 'Add New Customer';
+                document.getElementById('delCustBtn').style.display = 'none';
+                document.getElementById('unregisteredWarning').style.display = 'block';
+            }
+            
+            document.getElementById('customerModal').style.display = 'flex';
+        }
+
+        function closeCustomerModal() {
+            document.getElementById('customerModal').style.display = 'none';
+        }
+
+        async function saveCustomer() {
+            const phone = document.getElementById('custPhone').value.trim();
+            const name = document.getElementById('custName').value.trim();
+            const card = document.getElementById('custCard').value.trim();
+            const loc = document.getElementById('custLoc').value.trim();
+            
+            // Handle empty fields for database
+            const genderVal = document.getElementById('custGender').value;
+            const bdayVal = document.getElementById('custBirthday').value;
+
+            if (!phone || !name || !card) return showToast("Phone, Name, and Card are required.");
+
+            const btn = document.getElementById('saveCustBtn');
+            btn.innerText = "Saving..."; btn.disabled = true;
+
+            // 1. Update the CSV Whitelist (priority_customers table)
+            const whitelistPayload = { phone_number: phone, name: name, card_number: card, location: loc };
+            let err1;
+            if (currentEditPhone) {
+                const res = await supabaseClient.from('priority_customers').update(whitelistPayload).eq('phone_number', currentEditPhone);
+                err1 = res.error;
+            } else {
+                const res = await supabaseClient.from('priority_customers').insert([whitelistPayload]);
+                err1 = res.error;
+            }
+
+            if (err1) {
+                btn.innerText = "Save Profile"; btn.disabled = false;
+                if (err1.code === '23505') return showToast("This mobile number already exists.");
+                return showToast("Error: " + err1.message);
+            }
+
+            // 2. If they are an App User, update their Profile table too so they see changes instantly
+            if (currentEditProfileId) {
+                const profilePayload = { 
+                    full_name: name, 
+                    card_no: card, 
+                    location: loc, 
+                    gender: genderVal ? genderVal : null, 
+                    birthday: bdayVal ? bdayVal : null 
+                };
+                
+                const { error: err2 } = await supabaseClient.from('profiles').update(profilePayload).eq('id', currentEditProfileId);
+                if(err2) {
+                    console.error("Failed to sync with profiles table:", err2);
+                    showToast("Warning: App profile sync failed.");
+                }
+            }
+
+            btn.innerText = "Save Profile"; btn.disabled = false;
+            showToast("Customer saved successfully!");
+            closeCustomerModal();
+            
+            // Force the directory to re-fetch the fresh data immediately
+            loadDirectory(); 
+        }
+
+        async function deleteCustomer() {
+            if (!currentEditPhone) return;
+            if (!confirm("Delete this customer from the priority whitelist? (Note: This does not delete their app account, but prevents login).")) return;
+            
+            const btn = document.getElementById('delCustBtn');
+            btn.innerText = "Deleting..."; btn.disabled = true;
+
+            const { error } = await supabaseClient.from('priority_customers').delete().eq('phone_number', currentEditPhone);
+            
+            btn.innerText = "Delete"; btn.disabled = false;
+            
+            if (error) return showToast("Error deleting: " + error.message);
+            
+            showToast("Customer deleted.");
+            closeCustomerModal();
+            loadDirectory();
+        }
+
+        // --- CSV PARSING & UPLOAD ---
         async function uploadCSV() {
             const fileInput = document.getElementById('csvFile'); const btn = document.getElementById('uploadCsvBtn');
             if (!fileInput.files[0]) return showToast("Select a CSV file first.");
@@ -254,22 +507,23 @@
             Papa.parse(fileInput.files[0], { header: true, skipEmptyLines: true, complete: async function(results) {
                 btn.innerText = "Uploading to Database...";
                 const records = results.data.map(row => ({ name: row['Name'], card_number: row['Card Number'], location: row['Location'], phone_number: row['Phone Number'] })).filter(r => r.phone_number);
-                if (records.length === 0) { btn.innerText = "Import Customers"; return showToast("CSV Format Error: Columns must match exactly."); }
+                if (records.length === 0) { btn.innerText = "Import CSV"; return showToast("CSV Format Error: Columns must match exactly."); }
                 const { error } = await supabaseClient.from('priority_customers').upsert(records);
-                btn.innerText = "Import Customers";
+                btn.innerText = "Import CSV";
                 if (error) { showToast("Upload Error: " + error.message); } else { showToast(`Successfully imported ${records.length} customers!`); fileInput.value = ''; loadDirectory(); }
             }});
         }
 
         function listenForArrivals() { supabaseClient.channel('visits-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'visits' }, payload => { loadArrivals(); loadHistory(); }).subscribe(); }
 
+        // --- OFFERS ---
         async function uploadOffer() {
             const fileInput = document.getElementById('flyerImage'); const validFrom = document.getElementById('validFrom').value; const validTo = document.getElementById('validTo').value; const showUntil = document.getElementById('showUntil').value; const btn = document.getElementById('uploadBtn');
             if (!fileInput.files[0] || !validFrom || !validTo || !showUntil) return showToast("Fill all fields."); btn.innerText = "Uploading...";
             try { const file = fileInput.files[0]; const fileName = `flyer_${Date.now()}.${file.name.split('.').pop()}`; await supabaseClient.storage.from('flyers').upload(fileName, file); const { data } = supabaseClient.storage.from('flyers').getPublicUrl(fileName); await supabaseClient.from('offers').insert([{ image_url: data.publicUrl, valid_from: validFrom, valid_to: validTo, show_until: showUntil }]); showToast("Offer Published Successfully!"); fileInput.value = ''; document.getElementById('validFrom').value = ''; document.getElementById('validTo').value = ''; document.getElementById('showUntil').value = ''; } catch (err) { showToast("Error: " + err.message); } finally { btn.innerText = "Publish Flyer"; }
         }
 
-        function switchNav(tabName) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(tabName + 'Tab').classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); if(event) event.currentTarget.classList.add('active'); }
+        function switchNav(tabName) { document.querySelectorAll('.screen:not(.auth-screen)').forEach(s => s.classList.remove('active')); document.getElementById(tabName + 'Tab').classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); if(event) event.currentTarget.classList.add('active'); }
 
         checkSession();
         if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); }); }
