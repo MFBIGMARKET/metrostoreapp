@@ -1,3 +1,4 @@
+importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 const CACHE_NAME = 'metrofresh-v1';
 const urlsToCache = [
   '/',
