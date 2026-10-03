@@ -284,32 +284,37 @@
         let directoryCache = {}; 
         let currentEditPhone = null; 
         let currentEditProfileId = null;
+        let currentUserProfile = null; // We define it here
 
         document.getElementById('historyDate').value = new Date().toLocaleDateString('en-CA');
 
-        // --- ONESIGNAL INITIALIZATION ---
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         OneSignalDeferred.push(async function(OneSignal) {
-            await OneSignal.init({
-                appId: ONESIGNAL_APP_ID,
-            });
+            await OneSignal.init({ appId: ONESIGNAL_APP_ID });
         });
 
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3500); }
 
+        async function fetchLogo() { const { data } = await supabaseClient.from('store_settings').select('logo_url').eq('id', 1).single(); if (data && data.logo_url) document.querySelectorAll('.dynamic-logo').forEach(img => img.src = data.logo_url); }
+        fetchLogo();
+
         async function checkSession() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) { 
+                // FIX: Actually fetch the admin's profile so we know their branch!
+                const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+                currentUserProfile = profile; 
+
                 document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainApp').style.display = 'flex'; 
                 
-                // Setup Push for this Admin User
                 OneSignalDeferred.push(function(OneSignal) {
                     OneSignal.login(session.user.id);
-                    OneSignal.User.addTags({ "role": "store", "branch": profile.branch });
+                    OneSignal.User.addTags({ "role": "store", "branch": currentUserProfile.branch });
                     OneSignal.Slidedown.promptPush(); 
                 });
 
-                loadArrivals(); loadHistory(); loadDirectory(); loadPrizes(); listenForArrivals(); 
+                loadArrivals(); loadHistory(); loadDirectory(); 
+                if(!window.realtimeChannel) listenForArrivals(); 
             } 
             else { document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('mainApp').style.display = 'none'; }
         }
@@ -321,7 +326,7 @@
         }
         async function logout() { 
             OneSignalDeferred.push(function(OneSignal) { OneSignal.logout(); });
-            await supabaseClient.auth.signOut(); checkSession(); 
+            await supabaseClient.auth.signOut(); currentUserProfile = null; checkSession(); 
         }
 
         async function loadArrivals() {
@@ -383,7 +388,6 @@
                     <div class="dir-card" onclick="openCustomerModal('${c.phone_number}')" data-search="${merged.name.toLowerCase()} ${merged.phone} ${merged.card.toLowerCase()}">
                         <div class="dir-header">
                             <div><div class="arr-name">${merged.name} ${registeredBadge}</div><div class="arr-time">📱 ${merged.phone}</div></div>
-                            <div class="btn-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></div>
                         </div>
                         <div class="dir-details">
                             <div>Card Number <span>${merged.card}</span></div>
@@ -454,49 +458,6 @@
             btn.innerText = "Delete"; btn.disabled = false; showToast("Customer deleted."); closeCustomerModal(); loadDirectory();
         }
 
-        async function loadPrizes() {
-            const { data } = await supabaseClient.from('wheel_prizes').select('*').order('created_at', { ascending: true });
-            const list = document.getElementById('prizesList'); list.innerHTML = '';
-            if(!data || data.length === 0) { list.innerHTML = `<p style="text-align:center; color:gray; font-size:14px;">No prizes added yet. Wheel will be hidden.</p>`; return; }
-            data.forEach(p => {
-                const imgTag = p.image_url ? `<img class="prize-img" src="${p.image_url}">` : `<div class="prize-img" style="display:flex; justify-content:center; align-items:center; font-size:10px; color:gray;">No Img</div>`;
-                list.innerHTML += `<div class="prize-card">${imgTag}<div class="prize-name">${p.name}</div><button class="btn-delete" onclick="deletePrize('${p.id}')">Remove</button></div>`;
-            });
-        }
-
-        async function addPrize() {
-            const name = document.getElementById('newPrizeName').value.trim();
-            const fileInput = document.getElementById('newPrizeImage');
-            const btn = document.getElementById('addPrizeBtn');
-            
-            if(!name) return showToast("Enter a prize name.");
-            if(!fileInput.files[0]) return showToast("Please select a prize image.");
-
-            btn.innerText = "Uploading Image..."; btn.disabled = true;
-            
-            try {
-                const file = fileInput.files[0]; const fileName = `prize_${Date.now()}.${file.name.split('.').pop()}`;
-                await supabaseClient.storage.from('flyers').upload(fileName, file); 
-                const { data: imgData } = supabaseClient.storage.from('flyers').getPublicUrl(fileName);
-                
-                btn.innerText = "Saving Prize...";
-                const { error } = await supabaseClient.from('wheel_prizes').insert([{ name: name, image_url: imgData.publicUrl }]);
-                if(error) throw error;
-                
-                document.getElementById('newPrizeName').value = ''; fileInput.value = ''; 
-                showToast("Prize added!"); loadPrizes();
-            } catch (err) {
-                showToast("Error: " + err.message);
-            } finally {
-                btn.innerText = "+ Add Prize to Wheel"; btn.disabled = false;
-            }
-        }
-
-        async function deletePrize(id) {
-            if(!confirm("Remove this prize from the wheel?")) return;
-            await supabaseClient.from('wheel_prizes').delete().eq('id', id); loadPrizes();
-        }
-
         async function uploadCSV() {
             const fileInput = document.getElementById('csvFile'); const btn = document.getElementById('uploadCsvBtn');
             if (!fileInput.files[0]) return showToast("Select a CSV file first.");
@@ -504,16 +465,23 @@
             Papa.parse(fileInput.files[0], { header: true, skipEmptyLines: true, complete: async function(results) {
                 btn.innerText = "Uploading to Database...";
                 const records = results.data.map(row => ({ name: row['Name'], card_number: row['Card Number'], location: row['Location'], phone_number: row['Phone Number'], branch: currentUserProfile.branch })).filter(r => r.phone_number);
-                if (records.length === 0) { btn.innerText = "Import CSV"; return showToast("CSV Format Error."); }
+                if (records.length === 0) { btn.innerText = "Import CSV"; return showToast("CSV Format Error. Check columns."); }
                 const { error } = await supabaseClient.from('priority_customers').upsert(records);
                 btn.innerText = "Import CSV";
                 if (error) { showToast("Upload Error: " + error.message); } else { showToast(`Successfully imported ${records.length} customers!`); fileInput.value = ''; loadDirectory(); }
             }});
         }
 
-        function listenForArrivals() { supabaseClient.channel('visits-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'visits' }, payload => { loadArrivals(); loadHistory(); }).subscribe(); }
+        window.realtimeChannel = null;
+        function listenForArrivals() { 
+            if(window.realtimeChannel) return; // Prevent double subscribing
+            window.realtimeChannel = supabaseClient.channel('visits-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'visits' }, payload => { 
+                const activeTab = document.querySelector('.screen.active').id;
+                if(activeTab !== 'arrivalsTab') { showToast("🔔 Queue updated!"); }
+                loadArrivals(); loadHistory(); 
+            }).subscribe(); 
+        }
 
-        // --- NEW: UPLOAD FLYER SENDS PUSH TO CUSTOMERS ---
         async function uploadOffer() {
             const fileInput = document.getElementById('flyerImage'); const validFrom = document.getElementById('validFrom').value; const validTo = document.getElementById('validTo').value; const showUntil = document.getElementById('showUntil').value; const btn = document.getElementById('uploadBtn');
             if (!fileInput.files[0] || !validFrom || !validTo || !showUntil) return showToast("Fill all fields."); btn.innerText = "Uploading...";
