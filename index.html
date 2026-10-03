@@ -305,7 +305,7 @@
                 // Setup Push for this Admin User
                 OneSignalDeferred.push(function(OneSignal) {
                     OneSignal.login(session.user.id);
-                    OneSignal.User.addTag("role", "store");
+                    OneSignal.User.addTags({ "role": "store", "branch": profile.branch });
                     OneSignal.Slidedown.promptPush(); 
                 });
 
@@ -326,7 +326,7 @@
 
         async function loadArrivals() {
             const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-            const { data, error } = await supabaseClient.from('visits').select('*').eq('status', 'arriving').gte('created_at', oneHourAgo).order('created_at', { ascending: false });
+            const { data, error } = await supabaseClient.from('visits').select('*').eq('branch', currentUserProfile.branch).eq('status', 'arriving').gte('created_at', oneHourAgo).order('created_at', { ascending: false });
             const list = document.getElementById('arrivalsList'); list.innerHTML = '';
             if(!data || data.length === 0) { list.innerHTML = `<div class="empty-state"><p>No active customers waiting.</p></div>`; return; }
             data.forEach(v => {
@@ -344,7 +344,7 @@
         async function loadHistory() {
             const dateVal = document.getElementById('historyDate').value; if(!dateVal) return;
             const start = new Date(dateVal); start.setHours(0,0,0,0); const end = new Date(dateVal); end.setHours(23,59,59,999);
-            const { data } = await supabaseClient.from('visits').select('*').eq('status', 'completed').gte('created_at', start.toISOString()).lte('created_at', end.toISOString()).order('created_at', { ascending: false });
+            const { data } = await supabaseClient.from('visits').select('*').eq('branch', currentUserProfile.branch).eq('status', 'completed').gte('created_at', start.toISOString()).lte('created_at', end.toISOString()).order('created_at', { ascending: false });
             const list = document.getElementById('historyList'); list.innerHTML = '';
             if(!data || data.length === 0) { list.innerHTML = `<div class="empty-state"><p>No completed check-outs on this date.</p></div>`; return; }
             data.forEach(v => {
@@ -354,8 +354,8 @@
         }
 
         async function loadDirectory() {
-            const { data: whitelist } = await supabaseClient.from('priority_customers').select('*').order('name', { ascending: true });
-            const { data: registeredProfiles } = await supabaseClient.from('profiles').select('*').eq('role', 'customer');
+            const { data: whitelist } = await supabaseClient.from('priority_customers').select('*').eq('branch', currentUserProfile.branch).order('name', { ascending: true });
+            const { data: registeredProfiles } = await supabaseClient.from('profiles').select('*').eq('branch', currentUserProfile.branch).eq('role', 'customer');
             
             const list = document.getElementById('directoryList'); list.innerHTML = '';
             directoryCache = {}; 
@@ -432,7 +432,7 @@
             if (!phone || !name || !card) return showToast("Phone, Name, and Card are required.");
             const btn = document.getElementById('saveCustBtn'); btn.innerText = "Saving..."; btn.disabled = true;
 
-            const whitelistPayload = { phone_number: phone, name: name, card_number: card, location: loc };
+            const whitelistPayload = { phone_number: phone, name: name, card_number: card, location: loc, branch: currentUserProfile.branch };
             let err1;
             if (currentEditPhone) { const res = await supabaseClient.from('priority_customers').update(whitelistPayload).eq('phone_number', currentEditPhone); err1 = res.error; } 
             else { const res = await supabaseClient.from('priority_customers').insert([whitelistPayload]); err1 = res.error; }
@@ -503,7 +503,7 @@
             btn.innerText = "Parsing...";
             Papa.parse(fileInput.files[0], { header: true, skipEmptyLines: true, complete: async function(results) {
                 btn.innerText = "Uploading to Database...";
-                const records = results.data.map(row => ({ name: row['Name'], card_number: row['Card Number'], location: row['Location'], phone_number: row['Phone Number'] })).filter(r => r.phone_number);
+                const records = results.data.map(row => ({ name: row['Name'], card_number: row['Card Number'], location: row['Location'], phone_number: row['Phone Number'], branch: currentUserProfile.branch })).filter(r => r.phone_number);
                 if (records.length === 0) { btn.innerText = "Import CSV"; return showToast("CSV Format Error."); }
                 const { error } = await supabaseClient.from('priority_customers').upsert(records);
                 btn.innerText = "Import CSV";
@@ -521,9 +521,9 @@
                 const file = fileInput.files[0]; const fileName = `flyer_${Date.now()}.${file.name.split('.').pop()}`; 
                 await supabaseClient.storage.from('flyers').upload(fileName, file); 
                 const { data } = supabaseClient.storage.from('flyers').getPublicUrl(fileName); 
-                await supabaseClient.from('offers').insert([{ image_url: data.publicUrl, valid_from: validFrom, valid_to: validTo, show_until: showUntil }]); 
+                await supabaseClient.from('offers').insert([{ image_url: data.publicUrl, valid_from: validFrom, valid_to: validTo, show_until: showUntil, branch: currentUserProfile.branch }]); 
                 
-                // TRIGGER PUSH TO ALL CUSTOMERS
+                // TRIGGER PUSH TO BRANCH CUSTOMERS
                 if (CUSTOMER_ONESIGNAL_APP_ID && CUSTOMER_ONESIGNAL_REST_KEY) {
                     try {
                         await fetch('https://onesignal.com/api/v1/notifications', {
@@ -531,7 +531,11 @@
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${CUSTOMER_ONESIGNAL_REST_KEY}` },
                             body: JSON.stringify({
                                 app_id: CUSTOMER_ONESIGNAL_APP_ID,
-                                filters: [ {"field": "tag", "key": "role", "relation": "=", "value": "customer"} ],
+                                filters: [ 
+                                    {"field": "tag", "key": "role", "relation": "=", "value": "customer"},
+                                    {"operator": "AND"},
+                                    {"field": "tag", "key": "branch", "relation": "=", "value": currentUserProfile.branch}
+                                ],
                                 headings: {"en": "New Offers Available! 🛒"},
                                 contents: {"en": "Check out the latest exclusive deals in the Metro Fresh app."}
                             })
