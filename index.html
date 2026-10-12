@@ -7,28 +7,30 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#488928">
     
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    
-    <!-- ONESIGNAL SDK -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
     <style>
-        :root { --brand-green: #488928; --brand-yellow: #f2ba1d; --bg-light: #f4f7f6; --surface: #ffffff; --text-dark: #121212; --text-muted: #828a82; --border: #e8ece8; --nav-active-bg: #eaf3e6; }
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-        body { background-color: var(--bg-light); color: var(--text-dark); min-height: 100vh; overflow-x: hidden; }
+        :root { --brand-green: #488928; --brand-yellow: #f2ba1d; --bg-light: #f4f9f4; --surface: #ffffff; --text-dark: #121212; --text-muted: #718276; --border: #e4efe4; --nav-active-bg: #eaf3e6; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg-light); color: var(--text-dark); min-height: 100vh; overflow-x: hidden; }
         
         #loginScreen { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; background: var(--bg-light); }
-        .login-card { background: var(--surface); padding: 40px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); width: 100%; max-width: 400px; }
+        .login-card { background: var(--surface); padding: 40px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); width: 100%; max-width: 400px; border: 1px solid var(--border);}
         .auth-logo-wrap { display: flex; justify-content: center; margin-bottom: 30px;}
-        .auth-logo-wrap img { max-height: 50px; }
-        h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; text-align: center;}
-        .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 30px; text-align: center;}
+        .auth-logo-wrap img { max-height: 50px; border-radius: 8px;}
+        h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; text-align: center; letter-spacing: -0.5px;}
+        .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 30px; text-align: center; font-weight: 500;}
         
         .input-group { margin-bottom: 20px; position: relative; width: 100%;}
-        .input-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
-        .input-group input, .input-group select { width: 100%; padding: 15px; border: 1.5px solid var(--border); border-radius: 12px; font-size: 15px; outline: none; transition: 0.2s; background: #fafafa; color: var(--text-dark);}
-        .input-group input:focus, .input-group select:focus { border-color: var(--brand-green); background: var(--surface); box-shadow: 0 0 0 4px rgba(72,137,40,0.1);}
+        .input-group label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;}
+        .input-group input, .input-group select { width: 100%; padding: 15px; border: 1.5px solid var(--border); border-radius: 14px; font-size: 14px; font-weight: 500; outline: none; transition: 0.2s; background: #fafafa; color: var(--text-dark);}
+        .input-group input:focus, .input-group select:focus { border-color: var(--brand-green); background: var(--surface); box-shadow: 0 4px 15px rgba(72,137,40,0.08);}
         .input-group input.with-icon { padding-left: 45px; }
         .input-icon { position: absolute; left: 15px; top: 38px; width: 20px; height: 20px; color: #a0a5aa; }
         .search-bar .input-icon { top: 15px; }
@@ -36,65 +38,69 @@
         input[type="file"] { padding: 10px; }
         input[type="file"]::file-selector-button { background: var(--nav-active-bg); color: var(--brand-green); border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; margin-right: 15px; cursor: pointer; transition: 0.2s; }
         
-        .btn { width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; display: flex; justify-content: center; align-items: center; }
-        .btn-primary { background: var(--brand-green); color: white; }
+        .btn { width: 100%; padding: 16px; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);}
+        .btn-primary { background: var(--brand-green); color: white; box-shadow: 0 6px 15px rgba(72,137,40,0.2);}
         .btn-primary:active { transform: scale(0.98); }
         .btn-danger { background: #fff0f0; color: #dc3545; }
         
         #mainApp { display: none; height: 100vh; flex-direction: column; width: 100%; overflow: hidden;}
         .app-header { background: var(--surface); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); z-index: 20; flex-shrink: 0;}
         .app-logo { max-height: 35px; max-width: 180px; object-fit: contain; } 
-        .header-title { font-size: 13px; font-weight: 800; color: var(--brand-green); background: var(--nav-active-bg); padding: 6px 12px; border-radius: 12px; letter-spacing: 0.5px;}
+        .header-title { font-size: 12px; font-weight: 800; color: var(--brand-green); background: var(--nav-active-bg); padding: 6px 12px; border-radius: 12px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;}
         
+        /* Sound indicator styling */
+        .sound-indicator { display: inline-block; width: 8px; height: 8px; background: #60b63b; border-radius: 50%; box-shadow: 0 0 8px #60b63b; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
+
         .dashboard-body { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
         .app-nav { background: var(--surface); display: flex; justify-content: space-around; align-items: center; padding: 10px; border-top: 1px solid var(--border); z-index: 10; flex-shrink: 0;}
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); font-size: 11px; font-weight: 600; cursor: pointer; padding: 8px 10px; border-radius: 12px; transition: 0.2s; flex: 1;}
-        .nav-item svg { width: 22px; height: 22px; stroke-width: 2.5; transition: 0.2s;}
+        .nav-item svg { width: 22px; height: 22px; stroke-width: 2.2; transition: 0.2s;}
         .nav-item.active { background: var(--nav-active-bg); color: var(--brand-green); }
         
         .content-area { flex-grow: 1; position: relative; overflow: hidden; background: var(--bg-light); display: flex; flex-direction: column;}
         .screen { display: none; flex-direction: column; height: 100%; overflow-y: auto; }
         .screen.active { display: flex; }
         .section-header { padding: 25px; background: var(--bg-light); position: sticky; top: 0; z-index: 5;}
-        .s-title { font-size: 24px; font-weight: 800; color: var(--text-dark); margin-bottom: 4px;}
-        .s-sub { font-size: 13px; color: var(--text-muted); }
+        .s-title { font-size: 24px; font-weight: 800; color: var(--text-dark); margin-bottom: 4px; letter-spacing: -0.5px;}
+        .s-sub { font-size: 13px; color: var(--text-muted); font-weight: 500;}
         .content-padding { padding: 0 25px 25px 25px; }
         
         .grid-list { display: grid; grid-template-columns: 1fr; gap: 15px; align-items: start;}
-        .arrival-card, .history-card, .dir-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02); transition: 0.2s;}
+        .arrival-card, .history-card, .dir-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02); transition: 0.2s;}
         
         .arr-info { display: flex; flex-direction: column; gap: 6px; }
-        .arr-name { font-size: 18px; font-weight: 700; color: var(--text-dark); }
-        .arr-time { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;}
+        .arr-name { font-size: 17px; font-weight: 700; color: var(--text-dark); letter-spacing: -0.2px;}
+        .arr-time { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; font-weight: 500;}
         .arr-action { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-        .btn-mark { padding: 12px 20px; background: var(--brand-green); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(72,137,40,0.2);}
+        .btn-mark { padding: 12px 20px; background: var(--brand-green); color: white; border: none; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 6px 15px rgba(72,137,40,0.2);}
         .btn-mark:active { transform: scale(0.95); }
-        .badge-arrived { font-size: 12px; font-weight: 800; padding: 8px 14px; border-radius: 12px; background: var(--nav-active-bg); color: var(--brand-green); text-transform: uppercase;}
+        .badge-arrived { font-size: 11px; font-weight: 800; padding: 8px 14px; border-radius: 12px; background: var(--nav-active-bg); color: var(--brand-green); text-transform: uppercase; letter-spacing: 0.5px;}
         
         .dir-card { flex-direction: column; align-items: flex-start; gap: 10px; cursor: pointer;}
+        .dir-card:hover { border-color: #c9dec9; box-shadow: 0 8px 20px rgba(0,0,0,0.04); transform: translateY(-1px);}
         .dir-header { display: flex; justify-content: space-between; width: 100%; border-bottom: 1px solid var(--border); padding-bottom: 10px;}
-        .dir-details { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 10px; font-size: 13px; color: var(--text-muted);}
-        .dir-details span { color: var(--text-dark); font-weight: 600; display: block;}
+        .dir-details { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 10px; font-size: 12px; color: var(--text-muted); font-weight: 500;}
+        .dir-details span { color: var(--text-dark); font-weight: 700; display: block; margin-top: 2px;}
 
-        .prize-card { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; gap: 15px;}
+        .prize-card { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; margin-bottom: 12px; gap: 15px;}
         .prize-img { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; background: var(--bg-light); border: 1px solid var(--border);}
-        .prize-name { font-weight: 700; color: var(--brand-green); flex-grow: 1;}
-        .btn-delete { background: #fff0f0; color: #dc3545; border: none; padding: 8px 12px; border-radius: 8px; font-weight: 600; cursor: pointer;}
+        .prize-name { font-weight: 700; font-size: 14px; color: var(--text-dark); flex-grow: 1;}
+        .btn-delete { background: #fff0f0; color: #dc3545; border: none; padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s;}
 
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 15px; grid-column: 1 / -1;}
         .empty-state svg { color: #d0d5d0; width: 64px; height: 64px;}
         
-        .settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.03); max-width: 600px; margin-bottom: 20px;}
+        .settings-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 20px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.02); max-width: 600px; margin-bottom: 20px;}
         
-        /* Modal Styles */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(2px);}
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(4px);}
         .modal-content { background: var(--surface); border-radius: 24px; padding: 30px; width: 100%; max-width: 450px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); animation: popUp 0.2s ease-out; max-height: 90vh; overflow-y: auto;}
         @keyframes popUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-title { font-size: 20px; font-weight: 800; color: var(--text-dark); }
+        .modal-title { font-size: 20px; font-weight: 800; color: var(--text-dark); letter-spacing: -0.5px;}
         .close-btn { cursor: pointer; color: var(--text-muted); background: var(--bg-light); border-radius: 50%; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; transition: 0.2s;}
         
-        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e231e; color: white; padding: 14px 28px; border-radius: 30px; display: none; z-index: 9999; font-size: 14px; font-weight: 600;}
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e231e; color: white; padding: 14px 28px; border-radius: 30px; display: none; z-index: 9999; font-size: 14px; font-weight: 600; box-shadow: 0 10px 20px rgba(0,0,0,0.2);}
 
         @media (min-width: 768px) {
             .dashboard-body { flex-direction: row; }
@@ -108,6 +114,10 @@
     </style>
 </head>
 <body>
+
+    <!-- AUDIO ELEMENT FOR ALARM -->
+    <!-- Using a professional clean bell chime sound -->
+    <audio id="arrivalAlarm" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <div id="loginScreen">
         <div class="login-card">
@@ -131,7 +141,8 @@
     <div id="mainApp">
         <div class="app-header">
             <img class="app-logo" src="logo.png" alt="App Logo">
-            <div class="header-title">DASHBOARD</div>
+            <!-- Added sound indicator to let staff know audio is active -->
+            <div class="header-title"><span class="sound-indicator"></span> DASHBOARD</div>
         </div>
 
         <div class="dashboard-body">
@@ -139,7 +150,7 @@
                 <div class="nav-item active" onclick="switchNav('arrivals')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> Arrivals</div>
                 <div class="nav-item" onclick="switchNav('directory')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Directory</div>
                 <div class="nav-item" onclick="switchNav('history')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> History</div>
-                <div class="nav-item" onclick="switchNav('wheel')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="2" x2="12" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line><line x1="19.07" y1="4.93" x2="4.93" y2="19.07"></line></svg> Wheel</div>
+                <div class="nav-item" onclick="switchNav('wheel')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="2" x2="12" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line><line x1="19.07" y1="4.93" x2="4.93" y2="19.07"></line></svg> Wheel Prizes</div>
                 <div class="nav-item" onclick="switchNav('offers')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Flyers</div>
                 <div class="nav-item" onclick="switchNav('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Settings</div>
             </div>
@@ -187,7 +198,7 @@
                             </div>
                             <button class="btn btn-primary" id="addPrizeBtn" onclick="addPrize()">+ Add Prize to Wheel</button>
                         </div>
-                        <h3 style="font-size: 16px; margin-bottom: 15px; color: var(--text-dark);">Current Items on Wheel</h3>
+                        <h3 style="font-size: 16px; margin-bottom: 15px; color: var(--text-dark); font-weight: 800;">Current Items on Wheel</h3>
                         <div id="prizesList">
                             <p style="text-align:center; color:gray; font-size: 14px;">Loading prizes...</p>
                         </div>
@@ -279,29 +290,24 @@
         const CUSTOMER_ONESIGNAL_APP_ID = "5fc6d96f-915a-4e2f-bb8b-6f25a4cbe73d"; // From your screenshot earlier
         const CUSTOMER_ONESIGNAL_REST_KEY = "os_v2_app_l7dns34rljhc7o4ln4s2js7hhxykop4xvfhu5ymzcori42ce6ru343ac7ps3bot546m3jnpaxc4ge72mqenl37xans2nyyqixui7siq"; 
 
+
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let directoryCache = {}; 
         let currentEditPhone = null; 
         let currentEditProfileId = null;
-        let currentUserProfile = null; // We define it here
+        let currentUserProfile = null;
 
         document.getElementById('historyDate').value = new Date().toLocaleDateString('en-CA');
 
         window.OneSignalDeferred = window.OneSignalDeferred || [];
-        OneSignalDeferred.push(async function(OneSignal) {
-            await OneSignal.init({ appId: ONESIGNAL_APP_ID });
-        });
+        OneSignalDeferred.push(async function(OneSignal) { await OneSignal.init({ appId: ONESIGNAL_APP_ID }); });
 
         function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3500); }
-
-        async function fetchLogo() { const { data } = await supabaseClient.from('store_settings').select('logo_url').eq('id', 1).single(); if (data && data.logo_url) document.querySelectorAll('.dynamic-logo').forEach(img => img.src = data.logo_url); }
-        fetchLogo();
 
         async function checkSession() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) { 
-                // FIX: Actually fetch the admin's profile so we know their branch!
                 const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
                 currentUserProfile = profile; 
 
@@ -313,7 +319,7 @@
                     OneSignal.Slidedown.promptPush(); 
                 });
 
-                loadArrivals(); loadHistory(); loadDirectory(); 
+                loadArrivals(); loadHistory(); loadDirectory(); loadPrizes();
                 if(!window.realtimeChannel) listenForArrivals(); 
             } 
             else { document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('mainApp').style.display = 'none'; }
@@ -324,6 +330,7 @@
             btn.innerText = "Logging in..."; const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); btn.innerText = "Log In";
             if (error) showToast("Login failed. Check credentials."); else checkSession();
         }
+        
         async function logout() { 
             OneSignalDeferred.push(function(OneSignal) { OneSignal.logout(); });
             await supabaseClient.auth.signOut(); currentUserProfile = null; checkSession(); 
@@ -336,14 +343,15 @@
             if(!data || data.length === 0) { list.innerHTML = `<div class="empty-state"><p>No active customers waiting.</p></div>`; return; }
             data.forEach(v => {
                 const time = new Date(v.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                list.innerHTML += `<div class="arrival-card"><div class="arr-info"><div class="arr-name">${v.customer_name || 'Customer'}</div><div class="arr-time">Checked In: ${time}</div></div><div class="arr-action"><button class="btn-mark" onclick="markArrived('${v.id}', this)">Check Out</button></div></div>`;
+                list.innerHTML += `<div class="arrival-card"><div class="arr-info"><div class="arr-name">${v.customer_name || 'Customer'}</div><div class="arr-time"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Checked In: ${time}</div></div><div class="arr-action"><button class="btn-mark" onclick="markArrived('${v.id}', this)">Check Out</button></div></div>`;
             });
         }
 
-        async function markArrived(id, btn) { 
-            btn.innerText = "Processing..."; btn.disabled = true;
-            await supabaseClient.from('visits').update({ status: 'completed' }).eq('id', id); 
-            showToast("Customer Checked Out!"); loadArrivals(); loadHistory();
+        async function markArrived(id, btnElement) { 
+            btnElement.innerText = "Processing..."; btnElement.style.opacity = "0.7"; btnElement.disabled = true;
+            const { data, error } = await supabaseClient.from('visits').update({ status: 'completed' }).eq('id', id).select(); 
+            if (error || !data || data.length === 0) { btnElement.innerText = "Failed"; btnElement.style.opacity = "1"; btnElement.disabled = false; return showToast("Update Error. Check permissions."); }
+            showToast("Customer hand-off complete!"); loadArrivals(); loadHistory();
         }
 
         async function loadHistory() {
@@ -458,6 +466,49 @@
             btn.innerText = "Delete"; btn.disabled = false; showToast("Customer deleted."); closeCustomerModal(); loadDirectory();
         }
 
+        async function loadPrizes() {
+            const { data } = await supabaseClient.from('wheel_prizes').select('*').order('created_at', { ascending: true });
+            const list = document.getElementById('prizesList'); list.innerHTML = '';
+            if(!data || data.length === 0) { list.innerHTML = `<p style="text-align:center; color:gray; font-size:14px;">No prizes added yet.</p>`; return; }
+            data.forEach(p => {
+                const imgTag = p.image_url ? `<img class="prize-img" src="${p.image_url}">` : `<div class="prize-img" style="display:flex; justify-content:center; align-items:center; font-size:10px; color:gray;">No Img</div>`;
+                list.innerHTML += `<div class="prize-card">${imgTag}<div class="prize-name" style="color:var(--text-dark);">${p.name}</div><button class="btn-delete" onclick="deletePrize('${p.id}')">Remove</button></div>`;
+            });
+        }
+
+        async function addPrize() {
+            const name = document.getElementById('newPrizeName').value.trim();
+            const fileInput = document.getElementById('newPrizeImage');
+            const btn = document.getElementById('addPrizeBtn');
+            
+            if(!name) return showToast("Enter a prize name.");
+            if(!fileInput.files[0]) return showToast("Please select a prize image.");
+
+            btn.innerText = "Uploading Image..."; btn.disabled = true;
+            
+            try {
+                const file = fileInput.files[0]; const fileName = `prize_${Date.now()}.${file.name.split('.').pop()}`;
+                await supabaseClient.storage.from('flyers').upload(fileName, file); 
+                const { data: imgData } = supabaseClient.storage.from('flyers').getPublicUrl(fileName);
+                
+                btn.innerText = "Saving Prize...";
+                const { error } = await supabaseClient.from('wheel_prizes').insert([{ name: name, image_url: imgData.publicUrl }]);
+                if(error) throw error;
+                
+                document.getElementById('newPrizeName').value = ''; fileInput.value = ''; 
+                showToast("Prize added!"); loadPrizes();
+            } catch (err) {
+                showToast("Error: " + err.message);
+            } finally {
+                btn.innerText = "+ Add Prize to Wheel"; btn.disabled = false;
+            }
+        }
+
+        async function deletePrize(id) {
+            if(!confirm("Remove this prize from the wheel?")) return;
+            await supabaseClient.from('wheel_prizes').delete().eq('id', id); loadPrizes();
+        }
+
         async function uploadCSV() {
             const fileInput = document.getElementById('csvFile'); const btn = document.getElementById('uploadCsvBtn');
             if (!fileInput.files[0]) return showToast("Select a CSV file first.");
@@ -474,8 +525,13 @@
 
         window.realtimeChannel = null;
         function listenForArrivals() { 
-            if(window.realtimeChannel) return; // Prevent double subscribing
+            if(window.realtimeChannel) return; 
             window.realtimeChannel = supabaseClient.channel('visits-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'visits' }, payload => { 
+                
+                // PLAY AUDIO ALARM
+                try { document.getElementById('arrivalAlarm').play(); } 
+                catch(e) { console.log("Audio play blocked by browser. User must interact first."); }
+
                 const activeTab = document.querySelector('.screen.active').id;
                 if(activeTab !== 'arrivalsTab') { showToast("🔔 Queue updated!"); }
                 loadArrivals(); loadHistory(); 
@@ -491,7 +547,6 @@
                 const { data } = supabaseClient.storage.from('flyers').getPublicUrl(fileName); 
                 await supabaseClient.from('offers').insert([{ image_url: data.publicUrl, valid_from: validFrom, valid_to: validTo, show_until: showUntil, branch: currentUserProfile.branch }]); 
                 
-                // TRIGGER PUSH TO BRANCH CUSTOMERS
                 if (CUSTOMER_ONESIGNAL_APP_ID && CUSTOMER_ONESIGNAL_REST_KEY) {
                     try {
                         await fetch('https://onesignal.com/api/v1/notifications', {
@@ -518,7 +573,6 @@
         function switchNav(tabName) { document.querySelectorAll('.screen:not(.auth-screen)').forEach(s => s.classList.remove('active')); document.getElementById(tabName + 'Tab').classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); if(event) event.currentTarget.classList.add('active'); }
 
         checkSession();
-        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); }); }
     </script>
 </body>
 </html>
