@@ -528,9 +528,16 @@
             if(window.realtimeChannel) return; 
             window.realtimeChannel = supabaseClient.channel('visits-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'visits' }, payload => { 
                 
-                // PLAY AUDIO ALARM
-                try { document.getElementById('arrivalAlarm').play(); } 
-                catch(e) { console.log("Audio play blocked by browser. User must interact first."); }
+                // PLAY CUSTOM VOICE ANNOUNCEMENT
+                // Only trigger the voice if a NEW visit was inserted (customer arriving)
+                if (payload.eventType === 'INSERT' && payload.new.status === 'arriving') {
+                    try { 
+                        const announcement = new SpeechSynthesisUtterance("New priority customer arrived.");
+                        announcement.rate = 1.0; // Speed of the voice
+                        announcement.pitch = 1.1; // Slightly higher pitch for clarity
+                        window.speechSynthesis.speak(announcement);
+                    } catch(e) { console.log("Voice blocked by browser. User must interact first."); }
+                }
 
                 const activeTab = document.querySelector('.screen.active').id;
                 if(activeTab !== 'arrivalsTab') { showToast("🔔 Queue updated!"); }
