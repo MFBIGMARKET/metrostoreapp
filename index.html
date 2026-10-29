@@ -217,16 +217,25 @@
                 </div>
 
                 <div id="offersTab" class="screen">
-                    <div class="section-header"><h2 class="s-title">Add Flyer</h2><p class="s-sub">Upload new weekly offers to the app.</p></div>
+                    <div class="section-header">
+                        <h2 class="s-title">Flyers & Offers</h2>
+                        <p class="s-sub">Upload and manage weekly offers.</p>
+                    </div>
                     <div class="content-padding">
-                        <div class="settings-card">
+                        <div class="settings-card" style="margin-bottom: 25px;">
+                            <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 15px; color: var(--text-dark);">Upload New Flyer</h3>
                             <div class="input-group"><label>Flyer Image (JPG/PNG)</label><input type="file" id="flyerImage" accept="image/*"></div>
-                            <div style="display: flex; gap: 15px;">
+                            <div class="form-row" style="display: flex; gap: 15px;">
                                 <div class="input-group" style="flex:1;"><label>Valid From</label><input type="date" id="validFrom"></div>
                                 <div class="input-group" style="flex:1;"><label>Valid To</label><input type="date" id="validTo"></div>
                             </div>
                             <div class="input-group"><label>Show on App Until</label><input type="date" id="showUntil"></div>
                             <button class="btn btn-primary" id="uploadBtn" onclick="uploadOffer()" style="margin-top: 10px;">Publish Flyer</button>
+                        </div>
+
+                        <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 15px; color: var(--text-dark);">Manage Current Flyers</h3>
+                        <div id="manageOffersList" class="grid-list">
+                            <p style="text-align:center; color:gray; font-size: 13px;">Loading...</p>
                         </div>
                     </div>
                 </div>
@@ -291,6 +300,25 @@
             </div>
         </div>
     </div>
+    <!-- EDIT FLYER MODAL -->
+    <div class="modal-overlay" id="editFlyerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Flyer Dates</h3>
+                <div class="close-btn" onclick="closeEditFlyerModal()">✕</div>
+            </div>
+            
+            <div class="form-row" style="display: flex; gap: 15px;">
+                <div class="input-group" style="flex:1;"><label>Valid From</label><input type="date" id="editValidFrom"></div>
+                <div class="input-group" style="flex:1;"><label>Valid To</label><input type="date" id="editValidTo"></div>
+            </div>
+            <div class="input-group"><label>Show on App Until</label><input type="date" id="editShowUntil"></div>
+
+            <div style="display:flex; gap:15px; margin-top: 10px;">
+                <button class="btn btn-primary" id="saveFlyerEditBtn" onclick="saveFlyerEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
 
     <div id="toast">Message</div>
 
@@ -335,6 +363,7 @@
                     OneSignal.User.addTags({ "role": "store", "branch": currentUserProfile.branch });
                     OneSignal.Slidedown.promptPush(); 
                 });
+                loadArrivals(); loadActiveHistoryView(); loadDirectory(); loadPrizes(); loadManageOffers(); // ADDED HERE
 
                 loadArrivals(); loadHistory(); loadDirectory(); loadPrizes();
                 if(!window.realtimeChannel) listenForArrivals(); 
@@ -591,8 +620,91 @@
                     } catch(e) { console.error("Push network failed", e); }
                 }
 
-                showToast("Offer Published Successfully!"); fileInput.value = ''; document.getElementById('validFrom').value = ''; document.getElementById('validTo').value = ''; document.getElementById('showUntil').value = ''; 
+                showToast("Offer Published Successfully!"); 
+                loadManageOffers();
+                fileInput.value = ''; document.getElementById('validFrom').value = ''; document.getElementById('validTo').value = ''; document.getElementById('showUntil').value = ''; 
             } catch (err) { showToast("Error: " + err.message); } finally { btn.innerText = "Publish Flyer"; }
+        }
+
+        // --- NEW: MANAGE FLYERS LOGIC ---
+        let currentEditFlyerId = null;
+
+        async function loadManageOffers() {
+            const { data: offers, error } = await supabaseClient.from('offers')
+                .select('*')
+                .eq('branch', currentUserProfile.branch)
+                .order('created_at', { ascending: false });
+            
+            const list = document.getElementById('manageOffersList'); list.innerHTML = '';
+            
+            if (error) return showToast("Error loading flyers.");
+            if (!offers || offers.length === 0) { list.innerHTML = `<p style="text-align:center; color:gray; font-size:13px; padding: 20px 0;">No active flyers.</p>`; return; }
+            
+            offers.forEach(o => {
+                list.innerHTML += `
+                    <div class="dir-card" style="flex-direction: row; gap: 15px; align-items: center; padding: 15px;">
+                        <img src="${o.image_url}" style="width:70px; height:70px; border-radius:10px; object-fit:cover; border: 1px solid var(--border);">
+                        <div style="flex-grow:1;">
+                            <div style="font-weight:800; font-size:14px; color:var(--text-dark);">Valid: ${o.valid_from} to ${o.valid_to}</div>
+                            <div style="font-size:12px; color:var(--brand-green); font-weight: 600; margin-top:4px;">App Expiry: ${o.show_until}</div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <button class="btn-icon" onclick="openEditFlyerModal('${o.id}', '${o.valid_from}', '${o.valid_to}', '${o.show_until}')" title="Edit Dates">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                            </button>
+                            <button class="btn-icon" style="color:#dc3545; border-color:#f8d7da; background:#fff0f0;" onclick="deleteFlyer('${o.id}')" title="Delete">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function openEditFlyerModal(id, from, to, until) {
+            currentEditFlyerId = id;
+            document.getElementById('editValidFrom').value = from;
+            document.getElementById('editValidTo').value = to;
+            document.getElementById('editShowUntil').value = until;
+            document.getElementById('editFlyerModal').style.display = 'flex';
+        }
+
+        function closeEditFlyerModal() {
+            document.getElementById('editFlyerModal').style.display = 'none';
+            currentEditFlyerId = null;
+        }
+
+        async function saveFlyerEdit() {
+            if(!currentEditFlyerId) return;
+            const from = document.getElementById('editValidFrom').value;
+            const to = document.getElementById('editValidTo').value;
+            const until = document.getElementById('editShowUntil').value;
+
+            if(!from || !to || !until) return showToast("All dates are required.");
+
+            const btn = document.getElementById('saveFlyerEditBtn');
+            btn.innerText = "Saving..."; btn.disabled = true;
+
+            const { error } = await supabaseClient.from('offers')
+                .update({ valid_from: from, valid_to: to, show_until: until })
+                .eq('id', currentEditFlyerId);
+
+            btn.innerText = "Save Changes"; btn.disabled = false;
+
+            if(error) return showToast("Error updating flyer.");
+            
+            showToast("Flyer updated!");
+            closeEditFlyerModal();
+            loadManageOffers();
+        }
+
+        async function deleteFlyer(id) {
+            if(!confirm("Are you sure you want to permanently delete this flyer?")) return;
+            
+            const { error } = await supabaseClient.from('offers').delete().eq('id', id);
+            
+            if(error) return showToast("Error deleting flyer.");
+            showToast("Flyer deleted.");
+            loadManageOffers();
         }
         // --- NEW: HISTORY TAB CONTROLLER ---
         let currentHistoryView = 'arrival';
@@ -685,6 +797,7 @@
         }
 
         // --- NEW: TRANSACTION UPLOAD & SMART FILTERING ---
+        // --- BULLETPROOF TRANSACTION UPLOAD ---
         async function uploadTransactions() {
             const fileInput = document.getElementById('transFile');
             const btn = document.getElementById('uploadTransBtn');
@@ -701,35 +814,51 @@
                     const data = await file.arrayBuffer();
                     const workbook = XLSX.read(data);
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    rawData = XLSX.utils.sheet_to_json(worksheet, {raw: false});
+                    // defval: '' ensures empty cells don't break the mapping
+                    rawData = XLSX.utils.sheet_to_json(worksheet, {raw: false, defval: ''}); 
                 } else {
                     rawData = await new Promise((resolve) => { Papa.parse(file, { header: true, skipEmptyLines: true, complete: res => resolve(res.data) }); });
                 }
 
                 btn.innerText = "Filtering Premium Members...";
                 // Get the Priority List to compare against
-                const { data: whitelist } = await supabaseClient.from('priority_customers').select('card_number').eq('branch', currentUserProfile.branch);
-                const priorityCards = whitelist.map(w => w.card_number.toLowerCase().trim());
-
+                const { data: whitelist, error: wlError } = await supabaseClient.from('priority_customers').select('card_number').eq('branch', currentUserProfile.branch);
+                
+                if (wlError) throw new Error("Failed to load priority list: " + wlError.message);
+                
+                const priorityCards = whitelist.map(w => (w.card_number || '').toLowerCase().trim());
                 const validTransactions = [];
                 
                 // Cross-reference ERP data against the Priority Database
                 rawData.forEach(row => {
-                    const memberCode = (row['Member Code'] || '').toLowerCase().trim();
+                    // 1. Normalize headers (removes hidden spaces like "Member Code ")
+                    const normRow = {};
+                    for (let key in row) { normRow[key.trim()] = row[key]; }
+
+                    const memberCode = (normRow['Member Code'] || '').toLowerCase().trim();
                     
                     if (memberCode && priorityCards.includes(memberCode)) {
-                        // Fix DD/MM/YYYY to Postgres YYYY-MM-DD format
-                        const dateParts = (row['Date'] || '').split('/');
-                        const formattedDate = dateParts.length === 3 ? `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}` : null;
                         
+                        // 2. Smart Date Parsing (Handles DD/MM/YYYY, YYYY-MM-DD, and strips time)
+                        let rawDate = (normRow['Date'] || '').trim().split(' ')[0]; 
+                        let formattedDate = null;
+                        
+                        if(rawDate.includes('/')) {
+                            const p = rawDate.split('/');
+                            formattedDate = p[0].length === 4 ? `${p[0]}-${p[1]}-${p[2]}` : `${p[2]}-${p[1]}-${p[0]}`;
+                        } else if (rawDate.includes('-')) {
+                            const p = rawDate.split('-');
+                            formattedDate = p[0].length === 4 ? `${p[0]}-${p[1]}-${p[2]}` : `${p[2]}-${p[1]}-${p[0]}`;
+                        }
+
                         if(formattedDate) {
                             validTransactions.push({
                                 branch: currentUserProfile.branch,
                                 transaction_date: formattedDate,
-                                bill_no: row['Bill No'],
-                                member_code: row['Member Code'],
-                                member_name: row['Member Name'],
-                                bill_amount: parseFloat(row['Bill Amount']) || 0
+                                bill_no: normRow['Bill No'] || 'UNKNOWN',
+                                member_code: normRow['Member Code'],
+                                member_name: normRow['Member Name'],
+                                bill_amount: parseFloat(normRow['Bill Amount']) || 0
                             });
                         }
                     }
@@ -737,21 +866,26 @@
 
                 if (validTransactions.length === 0) {
                     btn.innerText = "Import Transactions"; btn.disabled = false;
-                    return showToast("No premium customer transactions found in this file.");
+                    return alert("No premium customer transactions found in this file for your branch. Please check the file formatting.");
                 }
 
-                btn.innerText = "Saving to Database...";
-                // Upsert checks the unique constraint. If the bill exists, it updates it. If not, it inserts.
-const { error } = await supabaseClient.from('premium_transactions').upsert(validTransactions, { onConflict: 'branch, bill_no' });
+                btn.innerText = `Saving ${validTransactions.length} bills...`;
                 
-                if (error) throw error;
+                // 3. Upsert prevents duplicates if you accidentally upload the same file twice
+                const { error } = await supabaseClient.from('premium_transactions').upsert(validTransactions, { onConflict: 'branch, bill_no' });
+                
+                if (error) {
+                    console.error("Supabase Error:", error);
+                    throw new Error(error.message);
+                }
                 
                 showToast(`Successfully saved ${validTransactions.length} premium transactions!`);
                 fileInput.value = '';
                 if(currentHistoryView === 'purchase') loadHistoryPurchase();
 
             } catch (err) {
-                showToast("Error: " + err.message);
+                // Using alert so the error stays on screen for you to read
+                alert("Upload Failed: " + err.message); 
                 console.error(err);
             } finally {
                 btn.innerText = "Import Transactions"; btn.disabled = false;
