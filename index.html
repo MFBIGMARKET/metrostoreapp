@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
@@ -177,11 +178,21 @@
                 </div>
 
                 <div id="historyTab" class="screen">
-                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;">
-                        <div><h2 class="s-title">History</h2><p class="s-sub">Checked out customers.</p></div>
-                        <div class="input-group" style="margin-bottom: 0; min-width: 200px;"><input type="date" id="historyDate" onchange="loadHistory()" style="background: var(--surface);"></div>
+                    <div class="section-header">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;">
+                            <div><h2 class="s-title">History</h2><p class="s-sub">Daily store activity logs.</p></div>
+                            <div class="input-group" style="margin-bottom: 0; min-width: 200px;">
+                                <input type="date" id="historyDate" onchange="loadActiveHistoryView()" style="background: var(--surface); padding:10px; border:1px solid var(--border); border-radius:8px; outline:none;">
+                            </div>
+                        </div>
+                        <!-- View Switcher Tabs -->
+                        <div style="display: flex; gap: 15px; margin-top: 20px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
+                            <div id="btnHistArrival" style="font-size: 14px; font-weight: 700; cursor: pointer; color: var(--brand-green); border-bottom: 3px solid var(--brand-green); padding-bottom: 6px;" onclick="switchHistoryView('arrival')">Arrivals</div>
+                            <div id="btnHistPurchase" style="font-size: 14px; font-weight: 700; cursor: pointer; color: var(--text-muted); padding-bottom: 6px;" onclick="switchHistoryView('purchase')">Purchases</div>
+                        </div>
                     </div>
                     <div class="content-padding grid-list" id="historyList"></div>
+                    <div class="content-padding grid-list" id="historyPurchaseList" style="display: none;"></div>
                 </div>
 
                 <div id="wheelTab" class="screen">
@@ -228,6 +239,12 @@
                             <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Upload a CSV file with columns exactly matching: <br><code>Name, Card Number, Location, Phone Number</code></p>
                             <div class="input-group"><input type="file" id="csvFile" accept=".csv"></div>
                             <button class="btn btn-primary" id="uploadCsvBtn" onclick="uploadCSV()">Import CSV</button>
+                            <hr style="border:none; border-top: 1px solid var(--border); margin: 35px 0 25px 0;">
+
+                            <h3 style="font-size: 18px; margin-bottom: 20px; color: var(--text-dark);">Upload Daily Transactions</h3>
+                            <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Upload ERP file (CSV or XLSX). The app will automatically filter and save <b>only</b> Priority Customer transactions.</p>
+                            <div class="input-group"><input type="file" id="transFile" accept=".csv, .xlsx, .xls"></div>
+                            <button class="btn btn-primary" id="uploadTransBtn" onclick="uploadTransactions()">Import Transactions</button>
                         </div>
                         <div class="settings-card" style="margin-top: 20px;">
                             <h3 style="font-size: 18px; margin-bottom: 20px; color: var(--text-dark);">Admin Account</h3>
@@ -576,6 +593,169 @@
 
                 showToast("Offer Published Successfully!"); fileInput.value = ''; document.getElementById('validFrom').value = ''; document.getElementById('validTo').value = ''; document.getElementById('showUntil').value = ''; 
             } catch (err) { showToast("Error: " + err.message); } finally { btn.innerText = "Publish Flyer"; }
+        }
+        // --- NEW: HISTORY TAB CONTROLLER ---
+        let currentHistoryView = 'arrival';
+
+        function switchHistoryView(view) {
+            currentHistoryView = view;
+            const btnArr = document.getElementById('btnHistArrival');
+            const btnPur = document.getElementById('btnHistPurchase');
+            const listArr = document.getElementById('historyList');
+            const listPur = document.getElementById('historyPurchaseList');
+
+            if (view === 'arrival') {
+                btnArr.style.color = 'var(--brand-green)'; btnArr.style.borderBottom = '3px solid var(--brand-green)';
+                btnPur.style.color = 'var(--text-muted)'; btnPur.style.borderBottom = 'none';
+                listArr.style.display = 'grid'; listPur.style.display = 'none';
+                loadHistory(); 
+            } else {
+                btnPur.style.color = 'var(--brand-green)'; btnPur.style.borderBottom = '3px solid var(--brand-green)';
+                btnArr.style.color = 'var(--text-muted)'; btnArr.style.borderBottom = 'none';
+                listPur.style.display = 'grid'; listArr.style.display = 'none';
+                loadHistoryPurchase(); 
+            }
+        }
+
+        function loadActiveHistoryView() {
+            if(currentHistoryView === 'arrival') loadHistory();
+            else loadHistoryPurchase();
+        }
+
+        async function loadHistoryPurchase() {
+            const dateVal = document.getElementById('historyDate').value; if(!dateVal) return;
+            
+            const { data, error } = await supabaseClient.from('premium_transactions')
+                .select('*')
+                .eq('branch', currentUserProfile.branch)
+                .eq('transaction_date', dateVal)
+                .order('created_at', { ascending: false });
+                
+            const list = document.getElementById('historyPurchaseList'); list.innerHTML = '';
+            
+            if (error) return showToast("Error loading purchases."); 
+            if(!data || data.length === 0) { list.innerHTML = `<div class="empty-state"><p>No premium purchases logged on this date.</p></div>`; return; }
+            
+            // --- NEW: Group the bills by Customer ---
+            const groupedData = {};
+            
+            data.forEach(t => {
+                const code = t.member_code || 'UNKNOWN';
+                
+                // If we haven't seen this customer yet, create a record for them
+                if (!groupedData[code]) {
+                    groupedData[code] = {
+                        member_name: t.member_name || 'Unknown',
+                        member_code: t.member_code,
+                        total_amount: 0,
+                        bill_nos: []
+                    };
+                }
+                
+                // Add the current bill's amount to their total
+                groupedData[code].total_amount += parseFloat(t.bill_amount || 0);
+                
+                // Add the bill number to their list of bills
+                if(t.bill_no) {
+                    groupedData[code].bill_nos.push(t.bill_no);
+                }
+            });
+
+            // Render the grouped data to the screen
+            Object.values(groupedData).forEach(g => {
+                // Join multiple bills with a comma and space
+                const billsString = g.bill_nos.join(', ');
+                // Format amount with Indian number system commas (e.g., 16,061)
+                const formattedTotal = g.total_amount.toLocaleString('en-IN'); 
+                
+                list.innerHTML += `
+                    <div class="history-card" style="align-items:flex-start;">
+                        <div class="arr-info" style="max-width: 70%;">
+                            <div class="arr-name">${g.member_name} <span style="font-size:11px; color:var(--text-muted);">(${g.member_code})</span></div>
+                            <div class="arr-time" style="line-height: 1.4;">
+                                Bill No:&nbsp;<span style="color: var(--text-dark); font-weight: 500;">${billsString}</span>
+                            </div>
+                        </div>
+                        <div class="arr-action">
+                            <div style="font-size: 18px; font-weight: 800; color: var(--brand-green);">₹${formattedTotal}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- NEW: TRANSACTION UPLOAD & SMART FILTERING ---
+        async function uploadTransactions() {
+            const fileInput = document.getElementById('transFile');
+            const btn = document.getElementById('uploadTransBtn');
+            if (!fileInput.files[0]) return showToast("Select a CSV or XLSX file.");
+            
+            btn.innerText = "Reading File..."; btn.disabled = true;
+            const file = fileInput.files[0];
+            const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+
+            try {
+                let rawData = [];
+                // Parse Excel or CSV
+                if (isExcel) {
+                    const data = await file.arrayBuffer();
+                    const workbook = XLSX.read(data);
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    rawData = XLSX.utils.sheet_to_json(worksheet, {raw: false});
+                } else {
+                    rawData = await new Promise((resolve) => { Papa.parse(file, { header: true, skipEmptyLines: true, complete: res => resolve(res.data) }); });
+                }
+
+                btn.innerText = "Filtering Premium Members...";
+                // Get the Priority List to compare against
+                const { data: whitelist } = await supabaseClient.from('priority_customers').select('card_number').eq('branch', currentUserProfile.branch);
+                const priorityCards = whitelist.map(w => w.card_number.toLowerCase().trim());
+
+                const validTransactions = [];
+                
+                // Cross-reference ERP data against the Priority Database
+                rawData.forEach(row => {
+                    const memberCode = (row['Member Code'] || '').toLowerCase().trim();
+                    
+                    if (memberCode && priorityCards.includes(memberCode)) {
+                        // Fix DD/MM/YYYY to Postgres YYYY-MM-DD format
+                        const dateParts = (row['Date'] || '').split('/');
+                        const formattedDate = dateParts.length === 3 ? `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}` : null;
+                        
+                        if(formattedDate) {
+                            validTransactions.push({
+                                branch: currentUserProfile.branch,
+                                transaction_date: formattedDate,
+                                bill_no: row['Bill No'],
+                                member_code: row['Member Code'],
+                                member_name: row['Member Name'],
+                                bill_amount: parseFloat(row['Bill Amount']) || 0
+                            });
+                        }
+                    }
+                });
+
+                if (validTransactions.length === 0) {
+                    btn.innerText = "Import Transactions"; btn.disabled = false;
+                    return showToast("No premium customer transactions found in this file.");
+                }
+
+                btn.innerText = "Saving to Database...";
+                // Upsert checks the unique constraint. If the bill exists, it updates it. If not, it inserts.
+const { error } = await supabaseClient.from('premium_transactions').upsert(validTransactions, { onConflict: 'branch, bill_no' });
+                
+                if (error) throw error;
+                
+                showToast(`Successfully saved ${validTransactions.length} premium transactions!`);
+                fileInput.value = '';
+                if(currentHistoryView === 'purchase') loadHistoryPurchase();
+
+            } catch (err) {
+                showToast("Error: " + err.message);
+                console.error(err);
+            } finally {
+                btn.innerText = "Import Transactions"; btn.disabled = false;
+            }
         }
 
         function switchNav(tabName) { document.querySelectorAll('.screen:not(.auth-screen)').forEach(s => s.classList.remove('active')); document.getElementById(tabName + 'Tab').classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); if(event) event.currentTarget.classList.add('active'); }
